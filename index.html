@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D AI Agency</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: rgba(15, 23, 42, 0.62);
+      --panel-2: rgba(255, 255, 255, 0.06);
+      --text: #e5eefc;
+      --muted: #9fb0cf;
+      --primary: #6366f1;
+      --accent: #ec4899;
+      --glow: #22d3ee;
+      --border: rgba(255, 255, 255, 0.12);
+      --shadow: 0 20px 80px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.18), transparent 24%),
+        radial-gradient(circle at 80% 15%, rgba(236, 72, 153, 0.18), transparent 20%),
+        radial-gradient(circle at 50% 80%, rgba(34, 211, 238, 0.14), transparent 28%),
+        linear-gradient(135deg, #081122 0%, var(--bg) 48%, #060b18 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.08;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E");
+      mix-blend-mode: soft-light;
+      z-index: 0;
+    }
+
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(28px);
+      opacity: 0.45;
+      z-index: 0;
+      pointer-events: none;
+      animation: float 10s ease-in-out infinite;
+    }
+
+    .orb-1 {
+      width: 240px;
+      height: 240px;
+      left: -60px;
+      top: 120px;
+      background: radial-gradient(circle, rgba(99,102,241,0.9), rgba(99,102,241,0.1) 70%, transparent 72%);
+    }
+
+    .orb-2 {
+      width: 180px;
+      height: 180px;
+      right: 8%;
+      top: 90px;
+      background: radial-gradient(circle, rgba(236,72,153,0.85), rgba(236,72,153,0.1) 70%, transparent 72%);
+      animation-delay: -4s;
+    }
+
+    .orb-3 {
+      width: 200px;
+      height: 200px;
+      right: 20%;
+      bottom: 8%;
+      background: radial-gradient(circle, rgba(34,211,238,0.78), rgba(34,211,238,0.1) 70%, transparent 72%);
+      animation-delay: -2s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-18px) scale(1.04); }
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      width: min(1200px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 48px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 18px;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      background: rgba(6, 10, 22, 0.55);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 16px;
+      z-index: 50;
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.12), 0 0 30px rgba(236, 72, 153, 0.24);
+      position: relative;
+      flex: none;
+    }
+
+    .brand-mark::after {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      border-radius: 11px;
+      border: 1px solid rgba(255,255,255,0.65);
+      transform: rotate(18deg);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.1;
+    }
+
+    .brand p {
+      margin: 3px 0 0;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .nav button {
+      border: 1px solid transparent;
+      color: var(--text);
+      background: transparent;
+      padding: 10px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: 0.25s ease;
+    }
+
+    .nav button:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.10);
+    }
+
+    .nav button.active {
+      background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(236,72,153,0.18));
+      border-color: rgba(255,255,255,0.14);
+      box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.12) inset;
+    }
+
+    .cta-mini {
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: linear-gradient(135deg, rgba(99,102,241,0.22), rgba(34,211,238,0.16));
+      color: var(--text);
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .page {
+      display: none;
+      animation: fadeIn 0.45s ease;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 24px;
+      align-items: center;
+      padding: 40px 0 28px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      color: #dbe7ff;
+      font-size: 0.86rem;
+      margin-bottom: 16px;
+    }
+
+    .eyebrow .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--glow), var(--accent));
+      box-shadow: 0 0 16px rgba(34, 211, 238, 0.65);
+    }
+
+    .hero h2 {
+      margin: 0;
+      font-size: clamp(2.4rem, 5vw, 5.2rem);
+      line-height: 0.97;
+      letter-spacing: -0.06em;
+      max-width: 11ch;
+    }
+
+    .hero h2 span {
+      background: linear-gradient(135deg, #ffffff, #b8c7ff 25%, #6ee7ff 60%, #ff7dc4 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero p {
+      max-width: 58ch;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.75;
+      margin: 18px 0 26px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-radius: 16px;
+      border: 1px solid transparent;
+      text-decoration: none;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-primary {
+      color: white;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      box-shadow: 0 16px 40px rgba(99,102,241,0.22);
+    }
+
+    .btn-secondary {
+      color: var(--text);
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(255,255,255,0.12);
+      backdrop-filter: blur(14px);
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 26px;
+    }
+
+    .stat {
+      padding: 16px;
+      border-radius: 18px;
+      background: var(--panel-2);
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(14px);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.2rem;
+      margin-bottom: 4px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .hero-visual {
+      perspective: 1200px;
+      min-height: 540px;
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+
+    .scene {
+      position: relative;
+      width: min(100%, 440px);
+      aspect-ratio: 1;
+      transform-style: preserve-3d;
+      animation: spin 18s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotateX(13deg) rotateY(0deg); }
+      100% { transform: rotateX(13deg) rotateY(360deg); }
+    }
+
+    .cube {
+      position: absolute;
+      inset: 16% 16%;
+      border-radius: 30px;
+      background:
+        linear-gradient(135deg, rgba(99,102,241,0.28), rgba(236,72,153,0.22)),
+        rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow:
+        0 30px 60px rgba(0,0,0,0.28),
+        inset 0 1px 0 rgba(255,255,255,0.2),
+        0 0 60px rgba(99,102,241,0.18);
+      transform: translateZ(0px) rotateY(25deg) rotateX(-12deg);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+
+    .cube::before,
+    .cube::after {
+      content: "";
+      position: absolute;
+      inset: -20%;
+      background: conic-gradient(from 90deg, transparent 0 28%, rgba(34,211,238,0.18) 35%, transparent 43%, rgba(236,72,153,0.18) 55%, transparent 70%, rgba(99,102,241,0.18) 85%, transparent 100%);
+      animation: glowSpin 10s linear infinite;
+      filter: blur(2px);
+    }
+
+    .cube::after {
+      inset: 12%;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01));
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+      animation: none;
+    }
+
+    @keyframes glowSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    .float-card {
+      position: absolute;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(8, 13, 28, 0.55);
+      border: 1px solid rgba(255,255,255,0.12);
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+      transform-style: preserve-3d;
+      animation: drift 6s ease-in-out infinite;
+    }
+
+    .float-card small {
+      display: block;
+      color: var(--muted);
+      font-size: 0.74rem;
+      margin-bottom: 4px;
+    }
+
+    .float-card strong {
+      font-size: 0.95rem;
+    }
+
+    .card-a { top: 8%; left: 0; transform: translateZ(50px) rotate(-6deg); }
+    .card-b { bottom: 10%; left: 8%; animation-delay: -2s; transform: translateZ(60px) rotate(7deg); }
+    .card-c { top: 18%; right: 0; animation-delay: -4s; transform: translateZ(70px) rotate(4deg); }
+
+    @keyframes drift {
+      0%, 100% { transform: translateY(0) translateZ(40px); }
+      50% { transform: translateY(-14px) translateZ(50px); }
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .glass {
+      border-radius: 24px;
+      background: rgba(255,255,255,0.055);
+      border: 1px solid rgba(255,255,255,0.10);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+    }
+
+    .feature {
+      padding: 22px;
+      min-height: 210px;
+      transform: translateY(0);
+      transition: 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature:hover {
+      transform: translateY(-6px) scale(1.01);
+      border-color: rgba(34,211,238,0.18);
+    }
+
+    .feature::before {
+      content: "";
+      position: absolute;
+      inset: auto -30% -45% auto;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99,102,241,0.22), transparent 60%);
+      pointer-events: none;
+    }
+
+    .icon {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.28), rgba(236,72,153,0.22));
+      border: 1px solid rgba(255,255,255,0.10);
+      margin-bottom: 16px;
+      font-size: 1.3rem;
+    }
+
+    h3, h4 {
+      margin: 0;
+    }
+
+    .feature p {
+      color: var(--muted);
+      line-height: 1.7;
+      margin: 12px 0 0;
+    }
+
+    .page-title {
+      padding: 18px 0 4px;
+    }
+
+    .page-title h2 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      line-height: 1.02;
+      letter-spacing: -0.05em;
+    }
+
+    .page-title p {
+      color: var(--muted);
+      max-width: 68ch;
+      line-height: 1.7;
+      margin: 10px 0 0;
+    }
+
+    .about-layout,
+    .contact-layout {
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .panel {
+      padding: 24px;
+    }
+
+    .panel p,
+    .panel li {
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .timeline-item {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .team-card {
+      padding: 18px;
+      min-height: 220px;
+      position: relative;
+      overflow: hidden;
+      transition: 0.25s ease;
+    }
+
+    .team-card:hover {
+      transform: translateY(-6px) rotateX(2deg);
+      box-shadow: 0 16px 45px rgba(0,0,0,0.32);
+    }
+
+    .avatar {
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(34,211,238,0.34), rgba(236,72,153,0.34));
+      border: 1px solid rgba(255,255,255,0.12);
+      margin-bottom: 14px;
+    }
+
+    .team-card span {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .service-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .service-card {
+      padding: 20px;
+      min-height: 220px;
+      transition: 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .service-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(236,72,153,0.18);
+    }
+
+    .service-card::after {
+      content: "";
+      position: absolute;
+      inset: auto -10% -35% auto;
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34,211,238,0.18), transparent 62%);
+      pointer-events: none;
+    }
+
+    .service-card ul {
+      margin: 14px 0 0 18px;
+      padding: 0;
+    }
+
+    .contact-layout .panel:nth-child(1) {
+      min-height: 420px;
+    }
+
+    .form {
+      display: grid;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      outline: none;
+      font: inherit;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: #90a1c4;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(34,211,238,0.4);
+      box-shadow: 0 0 0 4px rgba(34,211,238,0.08);
+    }
+
+    textarea {
+      min-height: 160px;
+      resize: vertical;
+    }
+
+    .map-box {
+      min-height: 180px;
+      border-radius: 22px;
+      margin-top: 16px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(99,102,241,0.22), transparent 20%),
+        radial-gradient(circle at 70% 65%, rgba(236,72,153,0.20), transparent 18%),
+        linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.10);
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .map-box::before {
+      content: "";
+      position: absolute;
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34,211,238,0.16), transparent 62%);
+      left: -60px;
+      bottom: -80px;
+    }
+
+    .socials {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .pill {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      text-align: center;
+      padding: 26px 0 10px;
+      font-size: 0.95rem;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .about-layout,
+      .contact-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-visual {
+        min-height: 440px;
+      }
+
+      .section-grid,
+      .team-grid,
+      .service-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .topbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .brand {
+        justify-content: center;
+      }
+
+      .nav {
+        justify-content: center;
+      }
+
+      .cta-mini {
+        text-align: center;
+      }
+
+      .hero-stats,
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .hero h2 {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="noise"></div>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+  <div class="bg-orb orb-3"></div>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div>
+          <h1>NovaSphere AI</h1>
+          <p>3D UI / Web Design Studio</p>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Main navigation">
+        <button class="active" data-page="home">Home</button>
+        <button data-page="about">About</button>
+        <button data-page="services">Services</button>
+        <button data-page="contact">Contact</button>
+      </nav>
+
+      <a class="cta-mini" href="#contact" data-page-link="contact">Get Started</a>
+    </header>
+
+    <!-- HOME -->
+    <main id="home" class="page active">
+      <section class="hero">
+        <div>
+          <div class="eyebrow"><span class="dot"></span> Futuristic AI agency website concept</div>
+          <h2><span>3D UI</span> for modern digital experiences.</h2>
+          <p>
+            NovaSphere AI is a premium futuristic website concept with glassmorphism panels, neon gradients,
+            interactive 3D-style visuals, and a smooth responsive layout. Built for a bold portfolio that stands out.
+          </p>
+
+          <div class="actions">
+            <a class="btn btn-primary" href="#services" data-page-link="services">Explore Services</a>
+            <a class="btn btn-secondary" href="#about" data-page-link="about">View About</a>
+          </div>
+
+          <div class="hero-stats">
+            <div class="stat glass">
+              <strong>3D Style</strong>
+              <span>Floating glass panels</span>
+            </div>
+            <div class="stat glass">
+              <strong>4 Pages</strong>
+              <span>Home, About, Services, Contact</span>
+            </div>
+            <div class="stat glass">
+              <strong>Responsive</strong>
+              <span>Mobile-friendly layout</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="scene">
+            <div class="cube"></div>
+            <div class="float-card card-a">
+              <small>AI Automation</small>
+              <strong>Smart workflows</strong>
+            </div>
+            <div class="float-card card-b">
+              <small>UI/UX</small>
+              <strong>Glassmorphism design</strong>
+            </div>
+            <div class="float-card card-c">
+              <small>Web App</small>
+              <strong>Neon interactive layout</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-grid">
+        <article class="feature glass">
+          <div class="icon">✦</div>
+          <h3>Neon Gradient Look</h3>
+          <p>High-contrast palette with blue, purple, and pink highlights for a bold futuristic identity.</p>
+        </article>
+        <article class="feature glass">
+          <div class="icon">◈</div>
+          <h3>3D Floating Elements</h3>
+          <p>Layered cards and orbiting shapes create depth without relying on heavy assets.</p>
+        </article>
+        <article class="feature glass">
+          <div class="icon">⌁</div>
+          <h3>Clean UX Flow</h3>
+          <p>Simple navigation and clear sections make the design feel premium and easy to explore.</p>
+        </article>
+      </section>
+    </main>
+
+    <!-- ABOUT -->
+    <section id="about" class="page">
+      <div class="page-title">
+        <h2>About NovaSphere AI</h2>
+        <p>
+          This concept presents a futuristic AI studio with a strong visual identity, polished interface patterns,
+          and a balanced structure that works well as an Upwork portfolio project.
+        </p>
+      </div>
+
+      <div class="about-layout">
+        <div class="panel glass">
+          <h3>Company Mission</h3>
+          <p>
+            We design premium digital experiences that blend creativity, motion, and performance.
+            The goal is to make websites feel alive while staying practical and responsive.
+          </p>
+
+          <div class="timeline">
+            <div class="timeline-item">
+              <h4>Vision</h4>
+              <p>Build elegant future-ready interfaces that help brands stand out instantly.</p>
+            </div>
+            <div class="timeline-item">
+              <h4>Approach</h4>
+              <p>Use modern UI patterns, smooth transitions, and visual hierarchy to improve clarity.</p>
+            </div>
+            <div class="timeline-item">
+              <h4>Result</h4>
+              <p>A memorable design system that looks professional on desktop and mobile.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel glass">
+          <h3>Team Cards</h3>
+          <p>3D hover cards can show team members, services, or featured projects.</p>
+
+          <div class="team-grid">
+            <div class="team-card glass">
+              <div class="avatar"></div>
+              <h4>Creative Lead</h4>
+              <span>Brand direction and visual design</span>
+            </div>
+            <div class="team-card glass">
+              <div class="avatar"></div>
+              <h4>Frontend Developer</h4>
+              <span>Responsive layout and animations</span>
+            </div>
+            <div class="team-card glass">
+              <div class="avatar"></div>
+              <h4>AI Engineer</h4>
+              <span>Smart tools and automation features</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SERVICES -->
+    <section id="services" class="page">
+      <div class="page-title">
+        <h2>Services</h2>
+        <p>
+          This page highlights the core offerings of the agency using glowing cards, subtle depth, and clear value statements.
+        </p>
+      </div>
+
+      <div class="service-list">
+        <article class="service-card glass">
+          <div class="icon">⌘</div>
+          <h3>Web Development</h3>
+          <p>Custom websites, landing pages, and dashboards built with clean code and responsive layouts.</p>
+          <ul>
+            <li>HTML, CSS, JavaScript</li>
+            <li>Responsive design</li>
+            <li>Fast performance</li>
+          </ul>
+        </article>
+        <article class="service-card glass">
+          <div class="icon">◎</div>
+          <h3>UI / UX Design</h3>
+          <p>Modern interfaces with strong spacing, visual hierarchy, and premium glassmorphism styling.</p>
+          <ul>
+            <li>Wireframes</li>
+            <li>Visual design systems</li>
+            <li>Interactive prototypes</li>
+          </ul>
+        </article>
+        <article class="service-card glass">
+          <div class="icon">⬡</div>
+          <h3>AI Solutions</h3>
+          <p>Smart website features, automation ideas, and futuristic presentation for modern brands.</p>
+          <ul>
+            <li>AI-themed UI</li>
+            <li>Automation workflows</li>
+            <li>Future-ready design</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact" class="page">
+      <div class="page-title">
+        <h2>Contact</h2>
+        <p>
+          Add this page to make the project feel complete and client-ready. It includes a glass form, a map-style panel,
+          and social contact pills.
+        </p>
+      </div>
+
+      <div class="contact-layout">
+        <div class="panel glass">
+          <h3>Send a Message</h3>
+          <p>Use this form layout for inquiries, project briefs, or client lead generation.</p>
+
+          <form class="form">
+            <div class="form-row">
+              <input type="text" placeholder="Your name" />
+              <input type="email" placeholder="Email address" />
+            </div>
+            <div class="form-row">
+              <input type="text" placeholder="Company / project" />
+              <input type="text" placeholder="Budget" />
+            </div>
+            <textarea placeholder="Tell us about your project"></textarea>
+            <button class="btn btn-primary" type="button">Submit Message</button>
+          </form>
+        </div>
+
+        <div class="panel glass">
+          <h3>Location & Socials</h3>
+          <p>Keep the right side visually rich with a map-style block and clean links.</p>
+          <div class="map-box">Map Placeholder / Studio Location</div>
+
+          <div class="socials">
+            <a class="pill" href="#">LinkedIn</a>
+            <a class="pill" href="#">GitHub</a>
+            <a class="pill" href="#">Dribbble</a>
+            <a class="pill" href="#">Instagram</a>
+          </div>
+
+          <div style="margin-top: 18px; padding: 18px; border-radius: 18px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);">
+            <h4>Contact Details</h4>
+            <p style="margin:10px 0 0;">Email: hello@novasphere.ai</p>
+            <p style="margin:6px 0 0;">Available for freelance and portfolio projects.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer-note">Created as a futuristic 3D UI portfolio project.</div>
+  </div>
+
+  <script>
+    const navButtons = document.querySelectorAll('.nav button');
+    const pages = document.querySelectorAll('.page');
+    const pageLinks = document.querySelectorAll('[data-page-link]');
+
+    function showPage(pageId) {
+      pages.forEach(page => page.classList.toggle('active', page.id === pageId));
+      navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.page === pageId));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    navButtons.forEach(btn => {
+      btn.addEventListener('click', () => showPage(btn.dataset.page));
+    });
+
+    pageLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        showPage(link.dataset.pageLink);
+      });
+    });
+
+    // Subtle pointer parallax for the hero scene
+    const scene = document.querySelector('.scene');
+    document.addEventListener('mousemove', (e) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 8;
+      const y = (e.clientY / window.innerHeight - 0.5) * -8;
+      if (scene) scene.style.transform = `rotateX(${13 + y}deg) rotateY(${x}deg)`;
+    });
+  </script>
+</body>
+</html>
